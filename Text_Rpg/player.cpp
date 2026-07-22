@@ -8,6 +8,10 @@ player::player(std::string name, int stat[], int job) {
     this->defence = stat[3];
     this->job = job;
     this->level = 1;
+    this->exp = 0;
+    this->maxexp = 100;
+    this->maxhp = stat[0];
+    this->maxmp = stat[1];
 }
 
 void player::takeDamage(int damage)
@@ -39,4 +43,68 @@ int player::getJob() const
 {
     return job;
 }
+int player::getExp() const
+{
+    return exp;
+}
+int player::getMaxExp() const
+{
+    return maxexp;
+}
+int player::getLevel() const
+{
+    return level;
+}
+int player::getDamage() const {
+    return Damage;
+}
+int player::getMaxHP() const {
+    return maxhp;
+}
+
+int player::getMaxMP() const {
+    return maxmp;
+}
+
+
+void player::setMaxHP(int maxhp) {
+    this->maxhp = maxhp;
+}
+
+void player::setMaxMP(int maxmp) {
+    this->maxmp = maxmp;
+}
+
+void player::setDamage(int newDamage) {
+    Damage = newDamage;
+}
+void player::setExp(int exp)
+{
+    this->exp = exp;
+}
+void player::setMaxExp(int maxexp)
+{
+    this->maxexp = maxexp;
+}
+void player::setLevel(int level)
+{
+    this->level = level;
+}
+void player::setHP(int hp)
+{
+    this->hp = hp;
+}
+void player::setMP(int mp)
+{
+    this->mp = mp;
+}
+void player::setPower(int att)
+{
+    this->power = att;
+}
+void player::setDefence(int def)
+{
+    this->defence = def;
+}
+
 player::~player() {}

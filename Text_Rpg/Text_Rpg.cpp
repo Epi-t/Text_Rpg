@@ -6,15 +6,36 @@
 #include "Thief.h"
 #include "Archer.h"
 #include "slime.h"
-#include <vector>
+#include "goblin.h"
+#include "skeleton.h" 
+#include "orc.h"
+#include "dragon.h"
+#include "inventory.h" 
+#include <vector>      
 #include <map>
+#include "item.h"
+#include <algorithm>
+#include "potion.h"
+#include "Text_Rpg.h"
 
 using namespace std;
+
+struct room {
+    int roomNumber;
+    bool isC;
+    unique_ptr<monster> Monster;
+};
 
 struct Ingredient {
     string name;
     int count;
 };
+
+void setPotion(int count, int* p_HPPotion, int* p_MPPotion)
+{
+    *p_HPPotion = count;
+    *p_MPPotion = count;
+}
 
 void printStatus(string name, int stat[])
 {
@@ -26,64 +47,173 @@ void printStatus(string name, int stat[])
     cout << "===========================\n";
 }
 
-class Item
-{
-private:
-    string name;
-    int price;
-
-public:
-    Item(string dropItemName, int dropItemPrice)
-    {
-        this->name = dropItemName;
-        this->price = dropItemPrice;
-    }
-    string getname()
-    {
-        return name;
-    }
-    int getprice()
-    {
-        return price;
-    }
-    void PrintInfo()
-    {
-        cout << name << " (" << price << "G)";
-    }
-};
-
 void alchemyworkshop()
 {
     cout << "\n=== Potion Shop ===\n";
     cout << "1. Show all recipes\n";
     cout << "2. Search by potion name\n";
     cout << "3. Search by ingredient\n";
+    cout << "4. Check Potion Stock\n";
+    cout << "5. Dispense Potion\n";
+    cout << "6. Return Potion\n";
     cout << "0. Go back to Main Menu\n";
     cout << "===================\n";
 }
 
+bool BattleLogic(std::string& name, monster* Monster, player* Player, int& choose, inventory<Item>& myInventory, std::string& dummy)
+{
+    cout << "[ Battle Start! ] " << name << " vs " << Monster->getMname() << "\n\n";
+    bool isWin = false;
+
+    while (Player->getHP() > 0 && Monster->getHP() > 0)
+    {
+        bool turnEnded = false;
+
+        while (!turnEnded)
+        {
+            cout << "--- Player Turn ---\n";
+            cout << "1. Attack\n";
+            cout << "2. Use Item\n";
+            cout << "Choose : ";
+            cin >> choose;
+
+            switch (choose) {
+            case 1:
+                Player->attack(Monster);
+                turnEnded = true;
+                break;
+            case 2:
+                cout << "\n[ inventory ]\n";
+
+                if (myInventory.GetSize() == 0) {
+                    cout << "* Inventory is empty!\n\n";
+                    break;
+                }
+
+                for (int i = 0; i < myInventory.GetSize(); i++) {
+                    cout << i + 1 << ". ";
+                    myInventory[i].PrintInfo();
+                    cout << "\n";
+                }
+                cout << "0. Cancel (Go back)\n";
+                cout << "Choose the Use item : ";
+
+                int itemChoice;
+                cin >> itemChoice;
+                cout << "\n";
+
+                if (itemChoice == 0) {
+                    cout << "* Cancelled item usage.\n\n";
+                    break;
+                }
+                else if (itemChoice > 0 && itemChoice <= myInventory.GetSize()) {
+
+                    string itemName = myInventory[itemChoice - 1].getname();
+
+                    if (itemName == "HPPotion") {
+                        int oldHP = Player->getHP();
+                        Player->setHP(min(Player->getHP() + 50, Player->getMaxHP()));
+                        cout << "* You used a HP Potion!\n";
+                        cout << "* Your HP increased: " << oldHP << " -> " << Player->getHP() << "\n";
+                        myInventory.RemoveItemAt(itemChoice - 1);
+                        turnEnded = true;
+                    }
+                    else if (itemName == "MPPotion") {
+                        int oldMP = Player->getMP();
+                        Player->setMP(min(Player->getMP() + 50, Player->getMaxMP()));
+                        cout << "* You used a MP Potion!\n";
+                        cout << "* Your MP increased: " << oldMP << " -> " << Player->getMP() << "\n";
+                        myInventory.RemoveItemAt(itemChoice - 1);
+                        turnEnded = true;
+                    }
+                    else {
+                        cout << "* You can't use this item in battle!\n\n";
+                    }
+                }
+                else {
+                    cout << "* Wrong input!\n\n";
+                }
+                break;
+            default:
+                cout << "* Wrong input!\n\n";
+                break;
+            }
+        }
+
+        if (Monster->getHP() <= 0)
+        {
+            cout << "\n" << Monster->getMname() << " (Dead)\n";
+            isWin = true;
+        }
+        else
+        {
+            cout << "\n--- " << Monster->getMname() << "'s Turn ---\n";
+            Monster->attack(Player);
+        }
+
+        if (!isWin && Player->getHP() > 0)
+        {
+            cout << "\n[Press Enter to go to the next turn...]\n";
+            cin.ignore();
+            getline(cin, dummy);
+        }
+    }
+
+    if (isWin)
+    {
+
+        Player->setExp(Player->getExp() + Monster->getExpReward());
+        cout << "\n* Victory!\n";
+        cout << "* +" << Monster->getExpReward() << " EXP! (EXP : " << Player->getExp() << " / " << Player->getMaxExp() << ")\n";
+        cout << "-> Got : " << Monster->getdropItemName() << "!\n";
+        cout << "Saved to inventory\n";
+
+        myInventory.AddItem(Item(Monster->getdropItemName(), Monster->getDropItemPrice()));
+
+
+        if (Player->getExp() >= Player->getMaxExp())
+        {
+            cout << "... Level up condition met\n";
+            cout << "  -> Level up! Lv." << Player->getLevel() << " -> Lv." << Player->getLevel() + 1 << endl;
+            Player->setExp(0);
+            Player->setMaxExp(Player->getMaxExp() + 25);
+            Player->setLevel(Player->getLevel() + 1);
+            Player->setMaxHP(Player->getMaxHP() + 10);
+            Player->setMaxMP(Player->getMaxMP() + 10);
+            Player->setHP(Player->getHP() + 10);
+            Player->setMP(Player->getMP() + 10);
+            Player->setPower(Player->getPower() + 5);
+            Player->setDefence(Player->getDefence() + 5);
+            cout << "HP +10, MP +10, Attack +5, Defence +5\n";
+        }
+        return true;
+    }
+    else
+    {
+        cout << "\n* You Lose...\n";
+        return false;
+    }
+}
+
+
 int main()
 {
-
     string name;
-    string Mname = "Slime";
-    string dropItemName = "Slime Jelly";
-    int dropItemPrice = 30;
-    int Mstat[3] = { 30, 20, 10 };
+
     const int SIZE = 4;
     int stat[SIZE] = { 0 };
 
     player* Player = nullptr;
     monster* Monster = nullptr;
-    vector<Item> inventory;
+    vector<room> rooms;
+    inventory<Item> myInventory(10);
     map<string, vector<Ingredient>> recipeDB;
-
 
     recipeDB["HPPotion"] = { {"Herb", 1}, {"Clean Water", 1} };
     recipeDB["StaminaPotion"] = { {"Herb", 1}, {"Berry", 1} };
 
     cout << "===========================\n";
-    cout << "          Welcome\n";
+    cout << "           Welcome\n";
     cout << "===========================\n";
     cout << "Enter your name: ";
     cin >> name;
@@ -111,8 +241,10 @@ int main()
     system("cls");
     printStatus(name, stat);
 
-    int HP_Potion = 5;
-    int MP_Potion = 5;
+    int HP_Potion;
+    int MP_Potion;
+    setPotion(3, &HP_Potion, &MP_Potion);
+
     int choose = 0;
     bool isGameStart = false;
 
@@ -158,6 +290,14 @@ int main()
         case 0:
             cout << "Let's start the game!\n";
             isGameStart = true;
+            for (int i = 0; i < HP_Potion; i++) {
+                myInventory.AddItem(Item("HPPotion", 10));
+                myInventory.ReturnPotion("HPPotion");
+            }
+            for (int i = 0; i < MP_Potion; i++) {
+                myInventory.AddItem(Item("MPPotion", 10));
+                myInventory.ReturnPotion("MPPotion");
+            }
             break;
         default:
             cout << "That's an incorrect input!\n";
@@ -166,10 +306,9 @@ int main()
     }
     system("cls");
 
-
     cout << "< Job Selection >\n";
     cout << name << ", choose your job!\n";
-    cout << "1. Warrior   2. Mage   3. Rogue   4. Archer\n";
+    cout << "1. Warrior   2. Mage   3. Thief   4. Archer\n";
     cout << "Choose : ";
 
     bool CJ = false;
@@ -204,15 +343,12 @@ int main()
         }
     }
 
- 
     Player->printPlayerStatus();
     cout << "\n[Press Enter to continue...]\n";
     cin.ignore();
     string dummy;
     getline(cin, dummy);
     system("cls");
-
-
 
     bool exitGame = false;
     int mainChoice = -1;
@@ -234,57 +370,56 @@ int main()
         {
             system("cls");
             cout << "You Enter the Dungeon.\n";
-
-            Monster = new slime(Mname, Mstat, dropItemName, dropItemPrice);
-
-            cout << "[ Battle Start! ] " << name << " vs " << Monster->getMname() << "\n\n";
-            bool isWin = false;
-
-            while (Player->getHP() > 0 && Monster->getHP() > 0)
+            for (int i = 0; i < 4; i++)
             {
-                cout << "--- Player Turn ---\n";
-                Player->attack();
-                int damageToMonster = Player->getPower() - Monster->getDefence();
-                if (damageToMonster < 0) damageToMonster = 0; 
 
-                cout << damageToMonster << " damage to " << Monster->getMname() << "!\n";
-                Monster->takeDamage(damageToMonster);
+                if (i == 0) {
+                    cout << "\n[ Room " << i + 1 << " ]\n";
+                    Monster = new slime();
+                }
+                else if (i == 1) {
+                    cout << "\n[ Room " << i + 1 << " ]\n";
+                    Monster = new goblin(); 
+                }
+                else if (i == 2) {
+                    cout << "\n[ Room " << i + 1 << " ]\n";
+                    Monster = new skeleton();
+                }
+                else if (i == 3) {
+                    cout << "\n[ Room " << i + 1 << " (BOSS) ]\n";
+                    Monster = new dragon();
+                }
 
-                if (Monster->getHP() <= 0)
+
+                cout << "Wild " << Monster->getMname() << " appeared!\n";
+                bool isWin = BattleLogic(name, Monster, Player, choose, myInventory, dummy);
+
+
+                delete Monster;
+                Monster = nullptr;
+
+
+                if (isWin == true)
                 {
-                    cout << Monster->getMname() << " (Dead)\n";
-                    isWin = true;
+
+                    if (i == 3) {
+                        cout << "\n====================================\n";
+                        cout << " Congratulations! You Win! \n";
+                        cout << "====================================\n";
+                        break;
+                    }
+                    else {
+                        cout << "\nVictory! Moving on to the next room...\n";
+                    }
                 }
                 else
                 {
-                    cout << Monster->getMname() << " HP : " << Monster->getHP() << "\n";
-                    cout << "\n--- " << Monster->getMname() << "'s Turn ---\n";
-                    Monster->attack(Player);
-                }
-
-                if (!isWin && Player->getHP() > 0)
-                {
-                    cout << "\n[Press Enter to go to the next turn...]\n";
-                    cin.ignore();
-                    getline(cin, dummy);
+                    cout << "\nYou Lose... Back to Main Menu...\n";
+                    break;
                 }
             }
 
-            if (isWin)
-            {
-                cout << "\n* Victory!\n";
-                cout << "-> Got : " << Monster->getdropItemName() << "!\n";
-                cout << "Saved to inventory\n";
-                inventory.push_back(Item(dropItemName, dropItemPrice));
-            }
-            else
-            {
-                cout << "\n* You Lose...\n";
-            }
 
-        
-            delete Monster;
-            Monster = nullptr;
 
             cout << "\n[Press Enter to return to Main Menu...]\n";
             cin.ignore();
@@ -293,23 +428,31 @@ int main()
             break;
         }
 
+
         case 2:
         {
             system("cls");
-            int i = 1;
-            cout << "[ Inventory (" << inventory.size() << "/10) ]\n";
+            cout << "[ Inventory (" << myInventory.GetSize() << "/" << myInventory.GetCapacity() << ") ]\n";
 
-            if (inventory.empty()) {
+            if (myInventory.GetSize() == 0) {
                 cout << "Inventory is empty.\n";
             }
             else {
-                for (auto item : inventory)
+                for (int i = 0; i < myInventory.GetSize(); i++)
                 {
-                    cout << i << ". ";
-                    item.PrintInfo();
+                    cout << i + 1 << ". ";
+                    myInventory[i].PrintInfo();
                     cout << "\n";
-                    i++;
                 }
+            }
+            int sc;
+            cout << "Do you want to organize your inventory? : (Y : 1) ";
+            cin >> sc;
+            switch (sc)
+            {
+            case 1:
+                myInventory.sortItems();
+                break;
             }
 
             cout << "\n[Press Enter to return to Main Menu...]\n";
@@ -329,6 +472,13 @@ int main()
                 alchemyworkshop();
                 cout << "Choose : ";
                 cin >> shopChoice;
+
+                if (cin.fail()) {
+                    cin.clear();
+                    cin.ignore(10000, '\n');
+                    cout << "Wrong input. Please enter a valid number.\n";
+                    continue;
+                }
 
                 if (shopChoice == 1) {
                     cout << "\n[All Recipe Lists]\n";
@@ -385,6 +535,21 @@ int main()
                     }
                     cout << "Found " << foundCount << " recipes.\n";
                 }
+                else if (shopChoice == 4) {
+                    cout << "Enter potion name to check stock: ";
+                    cin >> searchName;
+                    myInventory.GetStock(searchName);
+                }
+                else if (shopChoice == 5) {
+                    cout << "Enter potion name to dispense: ";
+                    cin >> searchName;
+                    myInventory.DispensePotion(searchName);
+                }
+                else if (shopChoice == 6) {
+                    cout << "Enter potion name to return: ";
+                    cin >> searchName;
+                    myInventory.ReturnPotion(searchName);
+                }
                 else if (shopChoice == 0) {
                     cout << "Leaving the potion workshop...\n";
                 }
@@ -410,8 +575,8 @@ int main()
             break;
         }
 
-        } 
-    } 
+        }
+    }
 
     if (Player != nullptr) {
         delete Player;
@@ -419,3 +584,4 @@ int main()
 
     return 0;
 }
+

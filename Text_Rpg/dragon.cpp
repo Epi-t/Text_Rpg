@@ -1,17 +1,16 @@
-#include "slime.h"
+#include "dragon.h"
 #include "player.h"
 #include <iostream>
 
 using namespace std;
 
+dragon::dragon() : monster("Dragon", 500, 100, 50, "Dragon Scale", 500, 300) {}
 
-slime::slime() : monster("Slime", 30, 15, 5, "Slime Jelly", 10, 15) {}
-
-void slime::attack(player* Player) {
+void dragon::attack(player* Player) {
     if (Player == nullptr) return;
     int damage = power - Player->getDefence();
     if (damage <= 0) damage = 1;
     Player->takeDamage(damage);
-    cout << name << " bounces and hits you!" << endl;
+    cout << name << " breathes scorching fire upon you!!!" << endl;
     cout << "Remaining HP : " << Player->getHP() << endl;
 }

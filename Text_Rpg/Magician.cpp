@@ -7,8 +7,21 @@ Magician::Magician(string name, int stat[]) : player(name, stat, 2) {
     this->mp = this->mp + 30;
 }
 
-void Magician::attack() {
-    cout << "* Fires a fireball!\n";
+
+void Magician::attack(monster* Monster) {
+    int BeforeHP = Monster->getHP();
+    cout << "[Magician] Fires a fireball! -> " << getPower() - Monster->getDefence() << " Damage to " << Monster->getMname() << "!\n";
+
+    if (getPower() - Monster->getDefence() <= 0)
+    {
+        Monster->setHp(Monster->getHP() - 1);
+    }
+    else
+    {
+        Monster->setHp(Monster->getHP() - getPower() + Monster->getDefence());
+    }
+    cout << Monster->getMname() << "'s HP : " << BeforeHP << " -> " << Monster->getHP() << endl;
+
 }
 
 void Magician::printPlayerStatus() {

@@ -139,9 +139,13 @@
     </Manifest>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="dragon.cpp" />
+    <ClCompile Include="goblin.cpp" />
     <ClCompile Include="Magician.cpp" />
     <ClCompile Include="monster.cpp" />
+    <ClCompile Include="orc.cpp" />
     <ClCompile Include="player.cpp" />
+    <ClCompile Include="skeleton.cpp" />
     <ClCompile Include="slime.cpp" />
     <ClCompile Include="Thief.cpp" />
     <ClCompile Include="Archer.cpp" />
@@ -149,9 +153,17 @@
     <ClCompile Include="Warrior.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="dragon.h" />
+    <ClInclude Include="goblin.h" />
+    <ClInclude Include="inventory.h" />
+    <ClInclude Include="item.h" />
     <ClInclude Include="monster.h" />
+    <ClInclude Include="orc.h" />
     <ClInclude Include="player.h" />
+    <ClInclude Include="potion.h" />
+    <ClInclude Include="skeleton.h" />
     <ClInclude Include="slime.h" />
+    <ClInclude Include="Text_Rpg.h" />
     <ClInclude Include="Warrior.h" />
     <ClInclude Include="Magician.h" />
     <ClInclude Include="Thief.h" />

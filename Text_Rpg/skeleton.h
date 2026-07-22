@@ -1,9 +1,8 @@
 #pragma once
 #include "monster.h"
 
-class slime : public monster {
+class skeleton : public monster {
 public:
-
-    slime();
+    skeleton();
     void attack(player* Player) override;
 };

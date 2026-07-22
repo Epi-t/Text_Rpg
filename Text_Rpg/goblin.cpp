@@ -1,17 +1,16 @@
-#include "slime.h"
+#include "goblin.h"
 #include "player.h"
 #include <iostream>
 
 using namespace std;
 
+goblin::goblin() : monster("Goblin", 50, 25, 10, "Goblin Dagger", 30, 25) {}
 
-slime::slime() : monster("Slime", 30, 15, 5, "Slime Jelly", 10, 15) {}
-
-void slime::attack(player* Player) {
+void goblin::attack(player* Player) {
     if (Player == nullptr) return;
     int damage = power - Player->getDefence();
     if (damage <= 0) damage = 1;
     Player->takeDamage(damage);
-    cout << name << " bounces and hits you!" << endl;
+    cout << name << " maliciously stabs you with a dagger!" << endl;
     cout << "Remaining HP : " << Player->getHP() << endl;
 }
